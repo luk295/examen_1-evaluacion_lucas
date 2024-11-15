@@ -1,0 +1,41 @@
+services:
+  bind:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: dns_examen
+
+    tty: true
+    ports:
+      - 57:53/udp
+      - 57:53/tcp
+    #- 127.0.0.1:953:953/tcp
+    volumes:
+    #  - ./configuracionOpciones:/etc/bind
+      - ./configuracion:/etc/bind/
+      - ./zonas:/var/lib/bind/
+    
+    networks:
+      primeira_evaluacion:
+        ipv4_address: 172.16.0.1
+      
+  cliente:
+    image: alpine  
+    container_name: cliente_examen
+    tty: true
+    
+    dns:
+      # - 8.8.8.8   dns de google para facer probas
+      - 172.16.0.1
+    networks:
+      primeira_evaluacion:
+        ipv4_address: 172.16.0.250
+       #caracteristicas de red. rango etc
+networks:
+  primeira_evaluacion:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.0.0/16
+          ip_range: 172.16.0.0/24
+          gateway: 172.16.0.254
+

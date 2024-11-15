@@ -94,11 +94,100 @@ Comproba que todo funciona có comando "dig"
 Mostra nos logs que o servicio funciona ben usando a saída da terminal ó levantar o compose ou có comando "docker logs [nomeContenedorOuID]"
 (o apartado 9 realízase na máquina virtual)
 ```
-### 9.1 Primero creo as carpetas para a zona e para as configuracións.
+### Primero creo as carpetas para a zona e para as configuracións.
+
+### 9.1, 9.2, 9.3 Creo o docker-compose e os ficheiros de zona e configuracións .
+
+`docker compose:`
+```
+services:
+  bind:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: dns_examen
+
+    tty: true
+    ports:
+      - 57:53/udp
+      - 57:53/tcp
+
+    volumes:
+
+      - ./configuracion:/etc/bind/
+      - ./zonas:/var/lib/bind/
+    
+    networks:
+      primeira_evaluacion:
+        ipv4_address: 172.16.0.1
+      
+  cliente:
+    image: alpine  
+    container_name: cliente_examen
+    tty: true
+    
+    dns:
+      - 172.16.0.1
+    networks:
+      primeira_evaluacion:
+        ipv4_address: 172.16.0.250
+
+networks:
+  primeira_evaluacion:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.0.0/16
+          ip_range: 172.16.0.0/24
+          gateway: 172.16.0.254
 
 
+```
 
+`zonas`:
+```
+ $TTL 38400	; 10 hours 40 minutes
+@		IN SOA	db.tendaelectronica.int. some.email.address. (
+				10000002   ; serial
+				10800      ; refresh (3 hours)
+				3600       ; retry (1 hour)
+				604800     ; expire (1 week)
+				38400      ; minimum (10 hours 40 minutes)
+				)
 
+www		IN A		172.16.0.1
+texto   	IN TXT          "1234ASDF"
+#alias	IN CNAME		db.tendaelectronica.int.
+
+```
+
+`configuracion`:
+```
+zone "db.tendaelectronica.int." {
+        type master;
+        file "/var/lib/bind/db.tendaelectronica.int.";
+        allow-query {
+                any;
+                };
+        };
+
+options {
+        directory "/var/cache/bind";
+
+        forwarders {
+                8.8.8.8;
+                1.1.1.1;
+         };
+         forward only;
+
+        listen-on { any; };
+        listen-on-v6 { any; };
+
+        allow-query {
+                any;
+        };
+};
+
+```
 
 
 
