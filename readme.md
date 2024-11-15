@@ -190,9 +190,161 @@ options {
 ```
 
 
+### Vexo a creación da rede e que os contenedores están no mesma rede:
+
+`docker network inspect examen_1-evaluacion_lucas_primeira_evaluacion` 
+
+```
+[
+    {
+        "Name": "examen_1-evaluacion_lucas_primeira_evaluacion",
+        "Id": "2bc7e08042266c999313427026deb1fd36ff9bdcbe4c96d6613c70a2f69c873c",
+        "Created": "2024-11-15T19:38:26.1697876+01:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.16.0.0/16",
+                    "IPRange": "172.16.0.0/24",
+                    "Gateway": "172.16.0.254"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "13c9813c9f510d9a93ddfc0be571208e9b5c3c19314fffefba270796fecac207": {
+                "Name": "cliente_examen",
+                "EndpointID": "c761d5b6fae71501b318a8df2e93dc251cacfb20196cf6f9bb4c4da2ca1f8717",
+                "MacAddress": "02:42:ac:10:00:fa",
+                "IPv4Address": "172.16.0.250/16",
+                "IPv6Address": ""
+            },
+            "afd10d3fb5e077c94d50d16b0888a75481ae0fea17890c771b6e9bf0a43ac70a": {
+                "Name": "dns_examen",
+                "EndpointID": "855270736f64e4ca7e3397cab7fa4964bc7ce6c046169ba8973704f37341a4ff",
+                "MacAddress": "02:42:ac:10:00:01",
+                "IPv4Address": "172.16.0.1/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {
+            "com.docker.compose.network": "primeira_evaluacion",
+            "com.docker.compose.project": "examen_1-evaluacion_lucas",
+            "com.docker.compose.version": "2.29.2"
+        }
+    }
+]
+```
 
 
 
+
+
+### Entro no cliente para ver que funciona. 
+`docker exec -it cliente_examen sh`
+
+Fago `ip a` :
+```
+luk@luk-VirtualBox:~/examen_1-evaluacion_lucas$ docker exec -it cliente_examen sh
+/ # ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+27: eth0@if28: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP 
+    link/ether 02:42:ac:10:00:fa brd ff:ff:ff:ff:ff:ff
+    inet 172.16.0.250/16 brd 172.16.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+/ # 
+
+```
+
+
+### Probo que vense entre eles:
+
+```
+/ # ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+27: eth0@if28: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP 
+    link/ether 02:42:ac:10:00:fa brd ff:ff:ff:ff:ff:ff
+    inet 172.16.0.250/16 brd 172.16.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+/ # ping 172.16.0.1
+PING 172.16.0.1 (172.16.0.1): 56 data bytes
+64 bytes from 172.16.0.1: seq=0 ttl=64 time=0.290 ms
+64 bytes from 172.16.0.1: seq=1 ttl=64 time=0.221 ms
+64 bytes from 172.16.0.1: seq=2 ttl=64 time=0.142 ms
+^C
+--- 172.16.0.1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.142/0.217/0.290 ms
+/ # 
+```
+
+### Para elo primero debo instalar as bind-tools:
+
+`apk update && apk add bind-tools`
+
+Non me responde. Así que modifico a rede agregando a dirección de google só para instalar e actualizar (momentaneamente):
+
+```
+  cliente:
+    image: alpine  
+    container_name: cliente_examen
+    tty: true
+    
+    dns:
+      - 8.8.8.8 
+      - 172.16.0.1
+      
+
+
+```
+
+### Comprobo facendo dig
+
+```
+/ # dig @172.16.0.1
+
+; <<>> DiG 9.18.27 <<>> @172.16.0.1
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: SERVFAIL, id: 58639
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1232
+; COOKIE: 00b93c77dbf010f70100000067379dee668c105637aef180 (good)
+;; QUESTION SECTION:
+;.				IN	NS
+
+;; Query time: 20 msec
+;; SERVER: 172.16.0.1#53(172.16.0.1) (UDP)
+;; WHEN: Fri Nov 15 19:15:58 UTC 2024
+;; MSG SIZE  rcvd: 56
+
+/ # 
+
+```
 
 
 

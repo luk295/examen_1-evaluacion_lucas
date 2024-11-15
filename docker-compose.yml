@@ -7,9 +7,8 @@ services:
     ports:
       - 57:53/udp
       - 57:53/tcp
-    #- 127.0.0.1:953:953/tcp
+
     volumes:
-    #  - ./configuracionOpciones:/etc/bind
       - ./configuracion:/etc/bind/
       - ./zonas:/var/lib/bind/
     
@@ -23,12 +22,12 @@ services:
     tty: true
     
     dns:
-      # - 8.8.8.8   dns de google para facer probas
+      - 8.8.8.8 
       - 172.16.0.1
     networks:
       primeira_evaluacion:
         ipv4_address: 172.16.0.250
-       #caracteristicas de red. rango etc
+ 
 networks:
   primeira_evaluacion:
     driver: bridge
